@@ -4,12 +4,16 @@
 
 include config.mk
 
+SRC = src
 REQ = util
 HDR = arg.h
 BIN = png2ff ff2png jpg2ff ff2jpg ff2pam ff2ppm
 SCR = 2ff
+MAN = man
 MAN1 = 2ff.1 $(BIN:=.1)
 MAN5 = farbfeld.5
+INSTALL = install
+RM = rm -fv
 
 all: $(BIN)
 
@@ -25,43 +29,35 @@ ff2jpg: ff2jpg.o $(REQ:=.o)
 ff2pam: ff2pam.o $(REQ:=.o)
 ff2ppm: ff2ppm.o $(REQ:=.o)
 
-png2ff.o: png2ff.c config.mk $(HDR) $(REQ:=.h)
-ff2png.o: ff2png.c config.mk $(HDR) $(REQ:=.h)
-jpg2ff.o: jpg2ff.c config.mk $(HDR) $(REQ:=.h)
-ff2jpg.o: ff2jpg.c config.mk $(HDR) $(REQ:=.h)
-ff2pam.o: ff2pam.c config.mk $(HDR) $(REQ:=.h)
-ff2ppm.o: ff2ppm.c config.mk $(HDR) $(REQ:=.h)
-
 .o:
 	$(CC) -o $@ $(LDFLAGS) $< $(REQ:=.o) $($*-LDLIBS)
 
-.c.o:
-	$(CC) -c $(CPPFLAGS) $(CFLAGS) $<
+%.o: $(SRC)/%.c $(DEPS)
+	$(CC) $(CPPFLAGS) $(CFLAGS) -o $@ -c $<
 
 clean:
-	rm -f $(BIN) $(BIN:=.o) $(REQ:=.o)
+	$(RM) $(BIN) $(BIN:=.o) $(REQ:=.o)
 
 dist:
 	rm -rf "farbfeld-$(VERSION)"
 	mkdir -p "farbfeld-$(VERSION)"
+	mkdir -p "farbfeld-$(VERSION)/$(SRC)"
+	mkdir -p "farbfeld-$(VERSION)/$(MAN)"
 	cp -R FORMAT LICENSE Makefile README config.mk $(SCR) \
-	      $(HDR) $(BIN:=.c) $(REQ:=.c) $(REQ:=.h) \
-	      $(MAN1) $(MAN5) "farbfeld-$(VERSION)"
+	      $(SRC) $(MAN) "farbfeld-$(VERSION)"
 	tar -cf - "farbfeld-$(VERSION)" | gzip -c > "farbfeld-$(VERSION).tar.gz"
 	rm -rf "farbfeld-$(VERSION)"
 
 install: all
-	mkdir -p "$(DESTDIR)$(PREFIX)/bin"
-	cp -f $(SCR) $(BIN) "$(DESTDIR)$(PREFIX)/bin"
-	for f in $(BIN) $(SCR); do chmod 755 "$(DESTDIR)$(PREFIX)/bin/$$f"; done
-	mkdir -p "$(DESTDIR)$(MANPREFIX)/man1"
-	cp -f $(MAN1) "$(DESTDIR)$(MANPREFIX)/man1"
-	for m in $(MAN1); do chmod 644 "$(DESTDIR)$(MANPREFIX)/man1/$$m"; done
-	mkdir -p "$(DESTDIR)$(MANPREFIX)/man5"
-	cp -f $(MAN5) "$(DESTDIR)$(MANPREFIX)/man5"
-	for m in $(MAN5); do chmod 644 "$(DESTDIR)$(MANPREFIX)/man5/$$m"; done
+	$(INSTALL) -d "$(DESTDIR)$(PREFIX)/bin"
+	$(INSTALL) -m 0755 $(SCR) $(BIN) "$(DESTDIR)$(PREFIX)/bin"
+	$(INSTALL) -d "$(DESTDIR)$(MANPREFIX)/man1"
+	$(INSTALL) -m 0644 $(addprefix $(MAN)/,$(MAN1)) "$(DESTDIR)$(MANPREFIX)/man1"
+	$(INSTALL) -d "$(DESTDIR)$(MANPREFIX)/man5"
+	$(INSTALL) -m 0644 $(addprefix $(MAN)/,$(MAN5)) "$(DESTDIR)$(MANPREFIX)/man5"
 
 uninstall:
-	for f in $(BIN) $(SCR); do rm -f "$(DESTDIR)$(PREFIX)/bin/$$f"; done
-	for m in $(MAN1); do rm -f "$(DESTDIR)$(MANPREFIX)/man1/$$m"; done
-	for m in $(MAN5); do rm -f "$(DESTDIR)$(MANPREFIX)/man5/$$m"; done
+	$(RM) "$(addprefix $(DESTDIR)$(PREFIX)/bin/,$(BIN))"
+	$(RM) "$(addprefix $(DESTDIR)$(PREFIX)/bin/,$(SRC))"
+	$(RM) "$(addprefix $(DESTDIR)$(MANPREFIX)/man1/,$(MAN1))"
+	$(RM) "$(addprefix $(DESTDIR)$(MANPREFIX)/man5/,$(MAN5))"
